@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title> Video Explore </title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 text-left">
+                <h2> Custom Video  </h2>
+            </div>
+            <div class="col-md-6 text-right">
+                <button onclick="openFile()" class="btn btn-success">Add More Video</button>
+                <input type="file" id="listvideo" name="listvideo" onchange="sendToServer()" hidden>
+            </div>
+        </div>
+    </div>            
+    <hr>
+    <div class="container">
+        <div class="row text-center">
+            <div class="col text-center" id="box">
+            </div>
+            <div class="col">
+                <span id="imgs"></span>
+                <hr>
+                <p align="center"><button onclick="downLoad()" style="display:none;" id="download"
+                        class="btn btn-success">Save Thumnail</button></p>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="container">
+        <div class="row">
+            <div class="col text-center">
+                <p>volume : <input id="volumeslider" type="range" min="0" max="100" value="100" step="1" onchange="setvolume()"> | <span id="curtimetext">00:00</span> / <span id="durtimetext">00:00</span> | seek : <input id="seekslider" type="range" min="0" max="100" value="0" step="1" onchange="vidSeek()"></p>
+            </div>
+        </div>
+    </div>
+    <hr>
+    
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-12">
+                <button onclick="play()" id="play" class="btn btn-success">Play</button>
+                <button onclick="pause()" id="pause" class="btn btn-success">Pause</button>
+                <button onclick="mute()" id="mute" class="btn btn-success">Mute</button>
+                <button onclick="unmute()" id="unmute" class="btn btn-success">UnMute</button>
+                <button onclick="fullscreen()" class="btn btn-success">Full Screen</button>
+                <button onclick="takePhoto()" class="btn btn-success">Take Photo</button>
+            </div>
+        </div>
+    </div>
+    <hr>
+
+    <div class="container">
+        <div class="row" style="margin: auto;">
+            <div class="col-md-6 offset-3">
+                <div id="allvideo"
+                style="width: 500px; padding: 5px; height: 120px; overflow-y: hidden; overflow-x: scroll; white-space: nowrap;">
+            </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+</body>
+
+<script>
+    const video = document.createElement('video');
+    const curtimetext = document.getElementById("curtimetext");
+    const durtimetext = document.getElementById("durtimetext");
+    video.addEventListener("timeupdate", seektimeupdate, false);
+
+    window.addEventListener("load", () => {
+
+        video.src = 'berkas/1683878349.mp4';
+        video.autoplay = false;
+        video.muted = false;
+        video.height = 240;
+        video.width = 320;
+        const box = document.getElementById('box');
+        box.appendChild(video);
+
+
+        let hr = new XMLHttpRequest();
+        hr.open("GET", "listvideo.php", true)
+        hr.onreadystatechange = function () {
+            if (hr.readyState == 4 && hr.status == 200) {
+                const array = JSON.parse(hr.responseText);
+                var html = '';
+                for (var i = 2; i < array.data.length; i++) {
+                    html += '<video src="berkas/' + array.data[i] + '" width="130" height="70" style="border:1px solid #000; padding:5px;display: inline;" id="video' + i + '" data-names="' + array.data[i] + '" onclick="show(' + i + ')"></video> &nbsp;';
+                }
+                document.getElementById("allvideo").innerHTML = html;
+            }
+
+        }
+        hr.send();
+    })
+
+    function updateVideo(e) {
+
+        video.src = 'berkas/' + e;
+        video.autoplay = false;
+        video.muted = false;
+        video.height = 240;
+        video.width = 320;
+        const box = document.getElementById('box');
+        box.appendChild(video);
+
+    }
+
+    function show(e) {
+        const vidid = document.querySelector("#video" + [e]);
+        const files = vidid.dataset.names;
+        updateVideo(files);
+    }
+
+    function play() {
+        video.play();
+        document.getElementById("play").disabled = true;
+    }
+
+    function pause() {
+        video.pause();
+        document.getElementById("play").disabled = false;
+    }
+
+    function mute() {
+        video.muted = true;
+        document.getElementById("mute").disabled = true;
+    }
+
+    function unmute() {
+        video.muted = false;
+        document.getElementById("mute").disabled = false;
+    }
+
+    function setvolume() {
+        video.volume = volumeslider.value / 100;
+    }
+
+    function fullscreen() {
+        if (video.requestFullScreen) {
+            video.requestFullScreen();
+        } else if (video.webkitRequestFullScreen) {
+            video.webkitRequestFullScreen();
+        } else if (video.mozRequestFullScreen) {
+            video.mozRequestFullScreen();
+        }
+    }
+
+    function vidSeek() {
+        var seekto = video.duration * (seekslider.value / 100);
+        video.currentTime = seekto;
+    }
+
+    function seektimeupdate() {
+        var nt = video.currentTime * (100 / video.duration);
+        seekslider.value = nt;
+        var curmins = Math.floor(video.currentTime / 60);
+        var cursecs = Math.floor(video.currentTime - curmins * 60);
+        var durmins = Math.floor(video.duration / 60);
+        var dursecs = Math.floor(video.duration - durmins * 60);
+        if (cursecs < 10) { cursecs = "0" + cursecs; }
+        if (dursecs < 10) { dursecs = "0" + dursecs; }
+        if (curmins < 10) { curmins = "0" + curmins; }
+        if (durmins < 10) { durmins = "0" + durmins; }
+        curtimetext.innerHTML = curmins + ":" + cursecs;
+        durtimetext.innerHTML = durmins + ":" + dursecs;
+    }
+
+    function openFile() {
+        document.getElementById("listvideo").click();
+    }
+
+    function sendToServer() {
+
+        let v = document.getElementById("listvideo").files[0];
+        let fd = new FormData();
+        fd.append('video', v);
+
+        let hr = new XMLHttpRequest();
+        hr.open("POST", "upload.php", true)
+        hr.onreadystatechange = function () {
+            if (hr.readyState == 4 && hr.status == 200) {
+                alert(hr.responseText);
+                window.location.reload();
+            }
+
+        }
+        hr.send(fd);
+    }
+
+    function takePhoto() {
+
+        var video = document.getElementsByTagName("video")[0];
+        var h = video.offsetHeight;
+        var w = video.offsetWidth;
+        const img = new Image();
+        const canvas = document.createElement("canvas");
+        const ctx =  canvas.getContext("2d");
+        canvas.height = h;
+        canvas.width = w;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        img.src = canvas.toDataURL("image/jpeg");
+        document.getElementById('imgs').appendChild(img);
+        document.getElementById("download").style = 'display:block'
+    }
+
+
+    function downLoad() {
+
+        const rand = (Math.random() * 134536348674647387);
+        const myImage = document.getElementsByTagName("img")[0].src;
+        const a = document.createElement('a');
+        document.body.appendChild(a);
+        a.href = myImage;
+        a.download = rand + ".jpeg";
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>
+</html>
